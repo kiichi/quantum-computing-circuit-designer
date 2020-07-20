@@ -28,18 +28,46 @@
             background-size: 100px 100px;
         }
 
-        #gate {
+        .gate {
             background-color: #333;
-            width: 50px;
-            height: 50px;
+            width: 46px; /* border 1px each side */
+            height: 46px;
             border: 1px solid #666;
+            font-family:Arial, Helvetica, sans-serif;
+        }
+        .gate:before {
+            line-height: 46px;            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color:#bbb;
+            font-weight: 100;
+        }
+        .X:before {
+            content:"X";
+            font-size:2.5em;
+        }
+        .H:before {
+            content: "H";
+            font-size:2.5em;
+        }
+        .M:before {
+            content: "M";
+            font-size:2.5em;
+        }
+        .CNOT {
+            height:146px;
+        }
+
+        .Q:before {
+            content:"|0>";
+            font-size:1.8em;
         }
     </style>
 </head>
 
 <body>
     <div id="container">
-        <div id="gate"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mobx/5.15.4/mobx.umd.min.js" integrity="sha256-UNmlC4kJptwCuBMr9TacFKVWt1u7VkOrJdpiu6SZseM=" crossorigin="anonymous"></script>
     <script>
@@ -48,39 +76,49 @@
     </script>
 
     <script>
-        // Plan A, qubits based structure - how to represet CNOT?
-        // or Plan B, gates contain info and renders on qubits
-        let circuit = {
-            qubits:[
-                {
-                    gates: [
-                        {type:"0"},
-                        {type:"H"},
-                    ]
-                },
-                {
-                    gates: [
-                        {type:"0"},
-                        {type:"H"},
-                        {type:"X"}
-                    ]
-                }
+        var state = mobx.observable({
+            qubits: 2,
+            gates:[
+                {type:"Q",q:0, t:0},
+                {type:"Q",q:1, t:0},
+                // Deutch's Algorithm
+                // Setup
+                {type:"H",q:0, t:2},
+                {type:"X",q:1, t:1},
+                {type:"H",q:1, t:2},
+                // Oracle e.g. Identity, balanced function
+                {type:"CNOT",q:0, t:3},
+                // Measure
+                {type:"M",q:0, t:4},
+                {type:"M",q:1, t:4}
             ]
-        };
-        let gridSize = 50;
+        });
+
+        let gridSize = 100;
+        let offsetLeft = gridSize * 1;
+        let offsetTop = gridSize * 1;
 
         var container = document.getElementById('container');
-        var element = document.getElementById('gate');
 
-        var options = {
-            grid: gridSize,
-            setCursor: true,
-            smoothDrag:false,
-            onDrag: update,
-            onDragEnd: update
-        };
+        state.gates.forEach((gate,idx) => {
+            let gateElem = document.createElement("div");
+            gateElem.className = "gate " + gate.type;
+            gateElem.id = 'gate_' + idx;
+            gateElem.textContent = gate.label;
+            document.getElementById('container').appendChild(gateElem);
 
-        var drag = new Draggable(element, options);
+            var options = {
+                grid: gridSize,
+                setCursor: true,
+                smoothDrag:false,
+                onDrag: update,
+                onDragEnd: update
+            };
+            var drag = new Draggable(gateElem, options);
+            drag.set(offsetLeft + gate.t * gridSize, offsetTop + gate.q * gridSize);
+        });
+
+        
         function update(element, x, y) {
             console.log(x, y);
         }
