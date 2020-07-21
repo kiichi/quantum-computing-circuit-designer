@@ -81,7 +81,21 @@
     </script>
 
     <script>
-        var state = mobx.observable({
+        let circuit = {
+            labels: [
+                {
+                    text: 'Phase Query',
+                    t:[1,2]
+                },
+                {
+                    text: 'Oracle',
+                    t:[3]
+                },
+                {
+                    text: 'Measurement',
+                    t:[4]
+                }
+            ],
             qubits: 2,
             gates:[
                 {type:"Q",q:0, t:0},
@@ -92,12 +106,13 @@
                 {type:"X",q:1, t:1},
                 {type:"H",q:1, t:2},
                 // Oracle e.g. Identity, balanced function
-                {type:"CNOT",q:0, t:3},
+                {type:"CNOT",q:0, t:3, target:1},
                 // Measure
                 {type:"M",q:0, t:4},
                 {type:"M",q:1, t:4}
             ]
-        });
+        };
+        let state = mobx.observable(circuit);
 
         let gridSize = 100;
         let offsetLeft = gridSize * 1;
@@ -116,24 +131,109 @@
         state.gates.forEach((gate,idx) => {
             let gateElem = document.createElement("div");
             gateElem.className = "gate " + gate.type;
+            gateElem.setAttribute('data-type',gate.type);
+            gateElem.setAttribute('data-index',idx);
             gateElem.id = 'gate_' + idx;
             gateElem.textContent = gate.label;
             document.getElementById('container').appendChild(gateElem);
 
-            var options = {
+            let options = {
                 grid: gridSize,
                 setCursor: true,
                 smoothDrag:false,
                 onDrag: update,
                 onDragEnd: update
             };
-            var drag = new Draggable(gateElem, options);
-            drag.set(offsetLeft + gate.t * gridSize, offsetTop + gate.q * gridSize);
+            let drag = new Draggable(gateElem, options);
+            drag.set(getX(gate.t), getY(gate.q));
         });
 
         
         function update(element, x, y) {
-            console.log(x, y);
+            //console.log(x, y, getT(x), getQ(y), element.getAttribute('data-type'),element.getAttribute('data-index'),element);
+            let idx = parseInt(element.getAttribute('data-index'));
+            state.gates[idx].t = getT(x);
+            state.gates[idx].q = getQ(y);
+        }
+
+        // translate evolution timeline t to screen coord x
+        function getX(t){
+            return offsetLeft + t * gridSize;
+        }
+
+        // translate qubits position q to screen coord y
+        function getY(q) {
+            return offsetTop + q * gridSize;
+        }
+
+        // translate screen coord x to evolution timeline t
+        function getT(x){
+            return (x - offsetLeft) / gridSize;
+        }
+
+        // translate screen coord y to qubits position q
+        function getQ(y){
+            return (y - offsetTop) / gridSize;
+        }
+
+        function exportQSharp(data){
+            // sort labels by t = pos
+            // sort gates by t
+            let glines = [];
+            for (let i=0; i<data?.gates?.length; i++){
+                let gtype = data?.gates[i]?.type;
+                let tpos = data?.gates[i]?.t;
+                let qpos = data?.gates[i]?.q;
+                if (!glines[tpos]) {
+                    glines[tpos] = [];
+                    // this will be inserted first
+                    glines[tpos][0] = `// t=${tpos}`;
+                }
+                let func = '';
+                if (gtype === 'Q'){
+                    // do nothing
+                }
+                else if (gtype === 'CNOT'){
+                    let target = data?.gates[i]?.target;
+                    func = `CNOT(qubits[${qpos}],qubits[${target}]);`;
+                }
+                else {
+                    func = `${gtype}(qubits[${qpos}]);`;
+
+                }
+                if (func){
+                    glines[tpos][1+qpos] = func; // +1 reserved 1st one for comment
+                }
+            }
+
+
+            let gatesCode = glines.filter((line)=>line.length > 1).map((line)=>{
+                //console.log(line);
+                return line.filter((seg)=>seg).map((seg)=>{
+                    return seg;
+                }).join('\n\t\t\t');
+            }).join('\n\n\t\t\t');
+
+
+            let usingCode = `
+        using(qubits = Qubit[${data?.qubits}]){
+            ${gatesCode}
+        }
+            `;
+            let codeStr = `
+namespace MyCircuit {
+    open Microsoft.Quantum.Canon;
+    open Microsoft.Quantum.Intrinsic;
+    open Microsoft.Quantum.Convert;
+    open Microsoft.Quantum.Math;
+
+    @EntryPoint()
+    operation Main(): Unit{
+${usingCode}
+    }
+}
+`;
+            return codeStr;
         }
     </script>
 </body>
