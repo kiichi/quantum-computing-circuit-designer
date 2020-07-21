@@ -27,6 +27,11 @@
             height: 100%;
             background-size: 100px 100px;
         }
+        .qubit-line {
+            border: 3px solid #222;
+            position: absolute;
+            width:90%;
+        }
 
         .gate {
             background-color: #333;
@@ -99,6 +104,14 @@
         let offsetTop = gridSize * 1;
 
         var container = document.getElementById('container');
+
+        for (let i=0; i<state.qubits; i++){
+            let qubitLine = document.createElement('hr');
+            qubitLine.className = 'qubit-line';
+            qubitLine.style.left = (25 + offsetLeft) + 'px';
+            qubitLine.style.top = (offsetTop + (i * gridSize) + 15) + 'px';
+            document.getElementById('container').appendChild(qubitLine);
+        }
 
         state.gates.forEach((gate,idx) => {
             let gateElem = document.createElement("div");
