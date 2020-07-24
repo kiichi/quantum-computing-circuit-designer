@@ -1,5 +1,9 @@
 # quantum-computing-circuit-designer
-Drag and Drop to Generate Q# Code or vice versa
+Drag and Drop to Generate Q# Code or vice versa (in the future)
+
+[Demo - Quantum Computing Circuit Designer for Q#](https://kiichi.github.io/quantum-computing-circuit-designer/)
+
+Still work in progress.
 
 ```
 let circuit = {
