@@ -106,19 +106,21 @@
 </head>
 
 <body>
+    <header class="navbar">
+        <section class="navbar-section">
+            <a href="..." class="navbar-brand mr-2 text-light ml-2">Quantum Computing Circuit Designer</a>
+            <a class="btn ml-2" onClick="test()">Test to Add Some Gates</a>
+        </section>
+        <section class="navbar-section">
+            <div class="input-group input-inline">
+                <button class="btn" onClick="showExport()">Q# Code <i class="icon icon-resize-horiz"></i></button>
+                <button id="export-button" class="btn" onClick="addQubit()">Add Qubit <i class="icon icon-plus"></i></button>
+            </div>
+        </section>
+    </header>
     <div id="main">
-        <header class="navbar">
-            <section class="navbar-section">
-                <a href="..." class="navbar-brand mr-2 text-light ml-2">Quantum Computing Circuit Designer</a>
-            </section>
-            <section class="navbar-section">
-                <div class="input-group input-inline">
-                    <button class="btn" onClick="showExport()">Q# Code <i class="icon icon-resize-horiz"></i></button>
-                    <button id="export-button" class="btn" onClick="addQubit()">Add Qubit <i class="icon icon-plus"></i></button>
-                </div>
-            </section>
-        </header>
     </div>
+    <!-- EXPORT MODAL DIALOG -->
     <div class="modal " id="modal-export">
         <a href="#close" class="modal-overlay" onClick="hideExport()"></a>
         <div class="modal-container ">
@@ -132,10 +134,10 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn" onClick="copyToClipboard()">Copy to Clipboard <i class="icon icon-edit"></i></button>
+            <button class="btn" onClick="copyToClipboard()">Copy to Clipboard <i class="icon icon-link"></i></button>
           </div>
         </div>
-      </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mobx/5.15.4/mobx.umd.min.js" integrity="sha256-UNmlC4kJptwCuBMr9TacFKVWt1u7VkOrJdpiu6SZseM=" crossorigin="anonymous"></script>
     <script>
         // draggable https://github.com/bcherny/draggable/
@@ -180,19 +182,11 @@
         let offsetLeft = gridSize * 1;
         let offsetTop = gridSize * 1;
 
-        var main = document.getElementById('main');
-
-        for (let i=0; i<state.qubits; i++){
-            let qubitLine = document.createElement('hr');
-            qubitLine.className = 'qubit-line';
-            qubitLine.style.left = (25 + offsetLeft) + 'px';
-            qubitLine.style.top = (offsetTop + (i * gridSize) + 15) + 'px';
-            document.getElementById('main').appendChild(qubitLine);
-        }
-
-        state.gates.forEach((gate,idx) => {
-            addGate(gate,idx);
-        });
+        mobx.autorun(function(reaction){
+            clearMainArea();
+            renderQubitLines(state.qubits);
+            renderGates(state.gates);
+        }, { delay: 100 });       
 
         function addGate(gate, idx){
             let gateElem = document.createElement("div");
@@ -229,14 +223,31 @@
             drag.set(x,y);
         }
 
+        function clearMainArea(){
+            document.getElementById('main').innerHTML = '';
+        }
+        function renderQubitLines(qubits){
+            let main = document.getElementById('main');
+            for (let i=0; i<qubits; i++){
+                let qubitLine = document.createElement('hr');
+                qubitLine.className = 'qubit-line';
+                qubitLine.style.left = (25 + offsetLeft) + 'px';
+                qubitLine.style.top = (offsetTop + (i * gridSize) + 15) + 'px';
+                main.appendChild(qubitLine);
+            }
+        }
         
+        function renderGates(gates){
+            gates.forEach((gate,idx) => {
+                addGate(gate,idx);
+            }); 
+        }
         function update(element, x, y) {
             //console.log(x, y, getT(x), getQ(y), element.getAttribute('data-type'),element.getAttribute('data-index'),element);
             let idx = parseInt(element.getAttribute('data-index'));
             state.gates[idx].t = getT(x);
             state.gates[idx].q = getQ(y);
         }
-
 
         // translate evolution timeline t to screen coord x
         function getX(t){
@@ -300,6 +311,11 @@
             let usingCode = `
 \t\tusing(qubits = Qubit[${data?.qubits}]){
 \t\t\t${gatesCode}
+
+\t\t\t//Reset All
+\t\t\tfor(qb in qubits){
+\t\t\t\tReset(qb);
+\t\t\t}
 \t\t}
 `;
             let codeStr = `namespace MyCircuit {
@@ -326,7 +342,6 @@ ${usingCode}
             document.getElementById("modal-export").classList.remove('active');
         }
 
-
         function copyToClipboard() {
             var input = document.createElement('textarea');
             input.innerHTML = document.getElementById('code').innerHTML;
@@ -338,7 +353,14 @@ ${usingCode}
         }
 
         function addQubit(){
-            alert('under construction');
+            state.qubits = state.qubits + 1;
+            state.gates.push({type:"Q",q:state.qubits-1, t:0});
+        }
+
+        function test(){
+            state.gates.push({type:"X",q:-1, t:5});
+            state.gates.push({type:"H",q:-1, t:6});
+            state.gates.push({type:"M",q:-1, t:7});
         }
     </script>
 </body>
