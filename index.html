@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Quantum Computing Circuit Designer for Q#</title>
-    <!-- <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-icons.min.css"> -->
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-icons.min.css">
     <style>
         /* https://codepen.io/jasonadelia/pen/DnrAe */
         html {
@@ -21,7 +21,10 @@
             background-image: linear-gradient(#434343, #282828);
         }
 
-        #container {
+        pre {-moz-tab-size: 4;} /* Firefox */
+        pre {tab-size: 4;} 
+
+        #main {
             background-color: transparent;
             background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent);
             height: 100%;
@@ -63,11 +66,11 @@
         /* maybe svg is better */
         /* https://editor.method.ac/ */
         .CNOT {
-            height:146px;
+            height:1300px;
             background:none;
             border:none;
             background: linear-gradient(#676767 0% 100%);
-            background-size: 5px 85px;
+            background-size: 5px 98px;
             background-repeat: no-repeat;
             background-position: 22px 20px;
         }
@@ -75,7 +78,7 @@
             content:"ᐧ";
             font-size:10.0em;
             margin-top:9px;            
-            margin-bottom:29px;
+            margin-bottom:16px;
             color:#bbb;
             margin-left:3px;
         }
@@ -93,12 +96,46 @@
         .Q {
             background-color:#262626;
         }
+
+        .navbar {
+            border-bottom:1px solid darkgray;
+            background:#444;
+        }
+
     </style>
 </head>
 
 <body>
-    <div id="container">
+    <div id="main">
+        <header class="navbar">
+            <section class="navbar-section">
+                <a href="..." class="navbar-brand mr-2 text-light ml-2">Quantum Computing Circuit Designer</a>
+            </section>
+            <section class="navbar-section">
+                <div class="input-group input-inline">
+                    <button class="btn" onClick="showExport()">Q# Code <i class="icon icon-resize-horiz"></i></button>
+                    <button id="export-button" class="btn" onClick="addQubit()">Add Qubit <i class="icon icon-plus"></i></button>
+                </div>
+            </section>
+        </header>
     </div>
+    <div class="modal " id="modal-export">
+        <a href="#close" class="modal-overlay" onClick="hideExport()"></a>
+        <div class="modal-container ">
+          <div class="modal-header pt-3 pl-0 pr-0">
+            <a href="#close" class="btn btn-clear float-right" onClick="hideExport()"></a>
+            <div class="modal-title h5">Exported Q# Code</div>
+          </div>
+          <div class="modal-body pt-0 pl-0 pr-0">
+            <div class="content">
+                <pre class="code mt-0 " data-lang="Q#"><code id="code"></code></pre>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn" onClick="copyToClipboard()">Copy to Clipboard <i class="icon icon-edit"></i></button>
+          </div>
+        </div>
+      </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mobx/5.15.4/mobx.umd.min.js" integrity="sha256-UNmlC4kJptwCuBMr9TacFKVWt1u7VkOrJdpiu6SZseM=" crossorigin="anonymous"></script>
     <script>
         // draggable https://github.com/bcherny/draggable/
@@ -143,23 +180,27 @@
         let offsetLeft = gridSize * 1;
         let offsetTop = gridSize * 1;
 
-        var container = document.getElementById('container');
+        var main = document.getElementById('main');
 
         for (let i=0; i<state.qubits; i++){
             let qubitLine = document.createElement('hr');
             qubitLine.className = 'qubit-line';
             qubitLine.style.left = (25 + offsetLeft) + 'px';
             qubitLine.style.top = (offsetTop + (i * gridSize) + 15) + 'px';
-            document.getElementById('container').appendChild(qubitLine);
+            document.getElementById('main').appendChild(qubitLine);
         }
 
         state.gates.forEach((gate,idx) => {
+            addGate(gate,idx);
+        });
+
+        function addGate(gate, idx){
             let gateElem = document.createElement("div");
             gateElem.className = "gate " + gate.type;
             gateElem.setAttribute('data-type',gate.type);
             gateElem.setAttribute('data-index',idx);
             gateElem.id = 'gate_' + idx;
-            document.getElementById('container').appendChild(gateElem);
+            document.getElementById('main').appendChild(gateElem);
 
             let x = getX(gate.t);
             let y = getY(gate.q);
@@ -186,7 +227,7 @@
             };
             let drag = new Draggable(gateElem, options);
             drag.set(x,y);
-        });
+        }
 
         
         function update(element, x, y) {
@@ -257,24 +298,47 @@
 
 
             let usingCode = `
-        using(qubits = Qubit[${data?.qubits}]){
-            ${gatesCode}
-        }
-            `;
-            let codeStr = `
-namespace MyCircuit {
-    open Microsoft.Quantum.Canon;
-    open Microsoft.Quantum.Intrinsic;
-    open Microsoft.Quantum.Convert;
-    open Microsoft.Quantum.Math;
+\t\tusing(qubits = Qubit[${data?.qubits}]){
+\t\t\t${gatesCode}
+\t\t}
+`;
+            let codeStr = `namespace MyCircuit {
+\topen Microsoft.Quantum.Canon;
+\topen Microsoft.Quantum.Intrinsic;
+\topen Microsoft.Quantum.Convert;
+\topen Microsoft.Quantum.Math;
 
-    @EntryPoint()
-    operation Main(): Unit{
+\t@EntryPoint()
+\toperation Main(): Unit{
 ${usingCode}
-    }
+\t}
 }
 `;
             return codeStr;
+        }
+    
+        function showExport(){
+            document.getElementById("modal-export").classList.add('active');
+            let code = exportQSharp(state);
+            document.getElementById('code').innerHTML = code;
+        }
+        function hideExport() {
+            document.getElementById("modal-export").classList.remove('active');
+        }
+
+
+        function copyToClipboard() {
+            var input = document.createElement('textarea');
+            input.innerHTML = document.getElementById('code').innerHTML;
+            document.body.appendChild(input);
+            input.select();
+            var result = document.execCommand('copy');
+            document.body.removeChild(input);
+            return result;
+        }
+
+        function addQubit(){
+            alert('under construction');
         }
     </script>
 </body>
