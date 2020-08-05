@@ -24,6 +24,16 @@
         pre {-moz-tab-size: 4;} /* Firefox */
         pre {tab-size: 4;} 
 
+        .navbar {
+            border-bottom:1px solid darkgray;
+            background:#444;
+            height:55px;
+        }
+
+        .gate-toolbar{
+            z-index: 300;/* note: modal's backdrop is 400 */
+        }
+
         #main {
             background-color: transparent;
             background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent);
@@ -97,19 +107,14 @@
             background-color:#262626;
         }
 
-        .navbar {
-            border-bottom:1px solid darkgray;
-            background:#444;
-        }
-
     </style>
 </head>
 
 <body>
-    <header class="navbar">
+    <header class="navbar" id="toolbar">
         <section class="navbar-section">
             <a href="..." class="navbar-brand mr-2 text-light ml-2">Quantum Computing Circuit Designer</a>
-            <a class="btn ml-2" onClick="test()">Test to Add Some Gates</a>
+            <!-- <a class="btn ml-2" onClick="test()">Test to Add Some Gates</a> -->
         </section>
         <section class="navbar-section">
             <div class="input-group input-inline">
@@ -147,6 +152,15 @@
     </script>
 
     <script>
+
+        // Toolbar Blueprint
+        let toolbarGates = [
+            {type:"H", class:" gate-toolbar", x:580, y:5},
+            {type:"X", class:" gate-toolbar", x:640, y:5},
+            {type:"M", class:" gate-toolbar", x:700, y:5},
+        ];
+
+        // Exportable Variables
         let state = {
             labels: [
                 {
@@ -179,16 +193,66 @@
             ]
         };
 
+        // Reference to HTML Elements
+        let gateRefs = {};
+
+        // Globals
         let gridSize = 100;
         let offsetLeft = gridSize * 1;
         let offsetTop = gridSize * 1;
 
+        // Main
         renderMain();
 
         function renderMain(){
             clearMainArea();
             renderQubitLines(state.qubits);
             renderGates(state.gates);
+            renderToolbar();
+        }
+
+        function renderToolbar(){
+            let toolbarElem = document.getElementById('main');
+            toolbarGates.forEach((tgate)=>{
+                let toolbarGate = createGate(tgate);
+                toolbarElem.appendChild(toolbarGate);
+                let options = {
+                    grid: gridSize,
+                    setCursor: true,
+                    smoothDrag:false,
+                    smoothDrag:true,
+                    onDrag: updateToolbarGate,
+                    onDragEnd: endDragEndToolbarGate
+                };
+                let drag = new Draggable(toolbarGate, options);
+                drag.set(tgate.x, tgate.y);
+                gateRefs[toolbarGate.id] = drag;
+            });
+
+        }
+
+        function updateToolbarGate(element, x, y, ev) {
+            //console.log(element,x,y, gateRefs[element.id]);
+        }
+
+        function endDragEndToolbarGate(element, x, y, ev){
+            // put toolbar one back to original pos
+            let tgateElem = gateRefs[element.id];
+            setTimeout(()=>{
+                tgateElem.set(tgateElem._dimensions.left, tgateElem._dimensions.top);
+            },500);
+
+            // add new gate
+            let t = getT(x);
+            let q = getQ(y);
+
+            //console.log(tgateElem.element.dataset.type,t,q);
+
+            let tmp = {type:tgateElem.element.dataset.type,q:q, t:t};
+            addGate(tmp);
+            state.gates.push(tmp);
+            console.log(state);
+
         }
 
         function addGate(gate){
@@ -213,19 +277,20 @@
             let options = {
                 grid: gridSize,
                 setCursor: cursor,
-                smoothDrag:false,
+                smoothDrag:true,
                 limit: {x:limX,y:limY},
                 onDrag: updateGate,
                 onDragEnd: updateGate
             };
             let drag = new Draggable(gateElem, options);
             drag.set(x,y);
+            gateRefs[gateElem.id] = drag;
         }
 
         function createGate(gate){
             let idx = (document.getElementsByClassName('gate').length);
             let gateElem = document.createElement("div");
-            gateElem.className = "gate " + gate.type;
+            gateElem.className = "gate " + gate.type + (gate.class ? gate.class : "");
             gateElem.setAttribute('data-type',gate.type);
             gateElem.setAttribute('data-index',idx);
             gateElem.id = 'gate_' + idx;
@@ -261,9 +326,10 @@
                 addGate(gate);
             }); 
         }
-        function updateGate(element, x, y) {
+        function updateGate(element, x, y, ev) {
             //console.log(x, y, getT(x), getQ(y), element.getAttribute('data-type'),element.getAttribute('data-index'),element);
-            let idx = parseInt(element.getAttribute('data-index'));
+            //let idx = parseInt(element.getAttribute('data-index'));
+            let idx = parseInt(element.dataset.index);
             state.gates[idx].t = getT(x);
             state.gates[idx].q = getQ(y);
         }
