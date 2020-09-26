@@ -38,6 +38,10 @@
             max-width: 90%;
         }
 
+        .clickable {
+            cursor:pointer;
+        }
+
         .gate-toolbar{
             z-index: 300;/* note: modal's backdrop is 400 */
         }
@@ -162,6 +166,7 @@
         <section class="navbar-section">
             <div class="input-group input-inline">
                 <button class="btn" onClick="showExport()">Q# <i class="icon icon-resize-horiz"></i></button>
+                <button class="btn" onClick="showExamples()">Examples <i class="icon icon-apps"></i></button>
                 <button id="export-button" class="btn" onClick="addQubit()">Qubit <i class="icon icon-plus"></i></button>
             </div>
         </section>
@@ -170,10 +175,10 @@
     </div>
     <!-- EXPORT MODAL DIALOG -->
     <div class="modal " id="modal-export">
-        <a href="#close" class="modal-overlay" onClick="hideExport()"></a>
+        <a href="#close" class="modal-overlay" onClick="hideDialog('modal-export')"></a>
         <div class="modal-container modal-wide">
           <div class="modal-header pt-3 pl-0 pr-0">
-            <a href="#close" class="btn btn-clear float-right" onClick="hideExport()"></a>
+            <a href="#close" class="btn btn-clear float-right" onClick="hideDialog('modal-export')"></a>
             <div class="modal-title h5">Exported Q# Code</div>
           </div>
           <div class="modal-body pt-0 pl-0 pr-0">
@@ -184,6 +189,22 @@
           <div class="modal-footer">
             <button class="btn" onClick="copyToClipboard()">Copy to Clipboard <i class="icon icon-link"></i></button>
           </div>
+        </div>
+    </div>
+    <!-- EXAMPLES MODAL DIALOG -->
+    <div class="modal " id="modal-examples">
+        <a href="#close" class="modal-overlay" onClick="hideDialog('modal-examples')"></a>
+        <div class="modal-container">
+            <div class="modal-header pt-3 pl-0 pr-0">
+            <a href="#close" class="btn btn-clear float-right" onClick="hideDialog('modal-examples')"></a>
+            <div class="modal-title h5">Circuit Examples</div>
+            </div>
+            <div class="modal-body pt-0 pl-0 pr-0">
+                <div class="content">
+                    <ul class="menu" id="modal-examples-menu">                       
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
     <script>
@@ -206,36 +227,82 @@
 
         // Exportable Variables
         let state = {
-            labels: [
-                {
-                    text: 'Phase Query',
-                    t:[1,2]
-                },
-                {
-                    text: 'Oracle',
-                    t:[3]
-                },
-                {
-                    text: 'Measurement',
-                    t:[4]
-                }
-            ],
-            qubits: 2,
-            gates:[
-                {type:"Q",q:0, t:0},
-                {type:"Q",q:1, t:0},
-                // Deutch's Algorithm
-                // Setup
-                {type:"H",q:0, t:2},
-                {type:"X",q:1, t:1},
-                {type:"H",q:1, t:2},
-                // Oracle e.g. Identity, balanced function
-                {type:"CNOT",q:0, t:3, target:1},
-                // Measure
-                {type:"M",q:0, t:4},
-                {type:"M",q:1, t:4}
-            ]
+            labels: [],
+            qubits: 0,
+            gates:[]
         };
+
+        const samples = [
+            {
+                name:"Bell State",
+                category: "Basic",
+                state:{ 
+                    labels:[
+                        {
+                            text: 'Phase Query',
+                            t:[1,2]
+                        },
+                        {
+                            text: 'Oracle',
+                            t:[3]
+                        },
+                        {
+                            text: 'Measurement',
+                            t:[4]
+                        }
+                    ],
+                    qubits:2,
+                    gates:[
+                        {type:"Q",q:0, t:0},
+                        {type:"Q",q:1, t:0},
+                        // Create 1/sqrt(2)(|00> + |11>)
+                        {type:"H",   q:0, t:1},
+                        {type:"CNOT",q:0, t:2, target:1},
+                        // Measure
+                        {type:"M",q:0, t:3},
+                        {type:"M",q:1, t:3}
+                    ]
+                }
+            },
+            {
+                name:"Deutch's Algorithm",
+                category: "Algorithm",
+                state:{ 
+                    labels:[
+                        {
+                            text: 'Phase Query',
+                            t:[1,2]
+                        },
+                        {
+                            text: 'Oracle',
+                            t:[3]
+                        },
+                        {
+                            text: 'Measurement',
+                            t:[4]
+                        }
+                    ],
+                    qubits:2,
+                    gates:[
+                        {type:"Q",q:0, t:0},
+                        {type:"Q",q:1, t:0},
+                        // Deutch's Algorithm
+                        // Setup
+                        {type:"H",q:0, t:2},
+                        {type:"X",q:1, t:1},
+                        {type:"H",q:1, t:2},
+                        // Oracle e.g. Identity, balanced function
+                        {type:"CNOT",q:0, t:3, target:1},
+                        // Measure
+                        {type:"M",q:0, t:4},
+                        {type:"M",q:1, t:4}
+                    ]
+                }
+            }
+        ];
+
+        state = samples[1].state; // example
+
 
         // Reference to HTML Elements
         let gateRefs = {};
@@ -531,8 +598,8 @@ ${usingCode}
             document.getElementById('code').innerHTML = code;
         }
         
-        function hideExport() {
-            document.getElementById("modal-export").classList.remove('active');
+        function hideDialog(id) {
+            document.getElementById(id).classList.remove('active');
         }
 
         function copyToClipboard() {
@@ -543,6 +610,40 @@ ${usingCode}
             var result = document.execCommand('copy');
             document.body.removeChild(input);
             return result;
+        }
+
+        function showExamples(){
+            document.getElementById('modal-examples-menu').innerHTML = createExampleMenuItems(samples);
+            document.getElementById("modal-examples").classList.add('active');
+        } 
+
+        function createExampleMenuItems(sampleData){
+            const categories = ["Basic","Algorithm"];
+            return categories.map((cat)=>{
+                let retHtml = `<li class="divider" data-content="${cat}"></li>`
+                    + sampleData
+                    .map((item,index)=>{
+                        item['index'] = index;
+                        return item;
+                    })
+                    .filter((item)=>item.category === cat)
+                    .map((item)=>{
+                        return `                        
+                        <li class="menu-item">
+                          <a class="clickable" onclick="loadExample(${item.index})">
+                            ${item.name} <i class="icon icon-download"></i>
+                          </a>
+                        </li>                       
+                        `;
+                    }).join("\n");
+                return retHtml;
+            }).join("\n");
+        }
+
+        function loadExample(index){
+            state = samples[index].state;
+            renderMain();
+            hideDialog('modal-examples');
         }
 
         function addQubit(){
