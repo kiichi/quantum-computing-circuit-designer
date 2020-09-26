@@ -29,6 +29,13 @@
             border-bottom:1px solid darkgray;
             background:#444;
             height:55px;
+            -webkit-box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.75);
+            -moz-box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.75);
+            box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.75);
+        }
+
+        .modal-wide {
+            max-width: 90%;
         }
 
         .gate-toolbar{
@@ -53,6 +60,10 @@
             height: 46px;
             border: 1px solid #666;
             font-family:Arial, Helvetica, sans-serif;
+            z-index:100;
+            -webkit-box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.75);
+            -moz-box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.75);
+            box-shadow: 0px 0px 3px 0px rgba(0,0,0,0.75);
         }
         .gate-placeholder {
             border: 2px dashed white!important;
@@ -77,6 +88,22 @@
             content:"X";
             font-size:2.5em;
         }
+        .Y:before {
+            content:"Y";
+            font-size:2.5em;
+        }
+        .Z:before {
+            content:"Z";
+            font-size:2.5em;
+        }
+        .T:before {
+            content:"T";
+            font-size:2.5em;
+        }
+        .P:before {
+            content:"P";
+            font-size:2.5em;
+        }
         .H:before {
             content: "H";
             font-size:2.5em;
@@ -98,6 +125,10 @@
             background-repeat: no-repeat;
             background-size: 5px 110px;
             background-position: 21px 20px;
+            
+            -webkit-box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.75);
+            -moz-box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.75);
+            box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.75);
         }
         .CNOT:before {
             /*content:"ᐧ";*/
@@ -140,7 +171,7 @@
     <!-- EXPORT MODAL DIALOG -->
     <div class="modal " id="modal-export">
         <a href="#close" class="modal-overlay" onClick="hideExport()"></a>
-        <div class="modal-container ">
+        <div class="modal-container modal-wide">
           <div class="modal-header pt-3 pl-0 pr-0">
             <a href="#close" class="btn btn-clear float-right" onClick="hideExport()"></a>
             <div class="modal-title h5">Exported Q# Code</div>
@@ -164,9 +195,13 @@
 
         // Toolbar Blueprint
         let toolbarGates = [
-            {type:"H", class:" gate-toolbar", x:580, y:5},
-            {type:"X", class:" gate-toolbar", x:640, y:5},
-            {type:"M", class:" gate-toolbar", x:700, y:5},
+            {type:"H", class:" gate-toolbar", x:500, y:5},
+            {type:"X", class:" gate-toolbar", x:550, y:5},
+            {type:"Y", class:" gate-toolbar", x:600, y:5},
+            {type:"Z", class:" gate-toolbar", x:650, y:5},
+            {type:"P", class:" gate-toolbar", x:700, y:5},
+            {type:"T", class:" gate-toolbar", x:750, y:5},
+            {type:"M", class:" gate-toolbar", x:800, y:5},
         ];
 
         // Exportable Variables
