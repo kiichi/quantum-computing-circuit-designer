@@ -119,32 +119,57 @@
         /* maybe svg is better */
         /* https://editor.method.ac/ */
         .CNOT {
+            /* 
             height:110px;
-            border:none;
             
             background: linear-gradient(#676767 0% 100%);
-            /*
-            background:url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGxpbmUgeDE9IjUiIHkxPSIwIiB4Mj0iNSIgeTI9IjEwIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZT0iIzY3Njc2NyIgLz4KPC9zdmc+');
-            */
+            
             background-repeat: no-repeat;
             background-size: 5px 110px;
             background-position: 21px 20px;
             
+            */
+            /* cancel default gate expression */
+            border:none;
+            background-color:transparent;
             -webkit-box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.75);
             -moz-box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.75);
-            box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.75);
+            box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.75); 
+
+            /* vertical bar */
+            /*
+            height:110px;
+            background: linear-gradient(#676767 0% 100%);
+            background-repeat: no-repeat;
+            background-size: 5px 110px;
+            background-position: 24px 20px;
+            */
+
         }
         .CNOT:before {
             /*content:"ᐧ";*/
             content:url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSByPSI5IiBjeD0iMTAiIGN5PSIxMCIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2U9IiM5OTkiIGZpbGw9IiNmN2Y5ZjkiLz4KPC9zdmc+');
-            padding-top:5px;
-            padding-left:2px;
-            margin-bottom:55px; /* y pos of XOR */
+            padding-top:7px;
+            padding-left:15px;
+            position: fixed;
+            /*margin-bottom:55px;*/ /* y pos of XOR */
+            top:-164px;
+
+            /* vertical bar */
+            height:180px;
+            background: linear-gradient(#676767 0% 100%);
+            background-repeat: no-repeat;
+            background-size: 5px 110px;
+            background-position: 23px 100px;
+
         }
         .CNOT:after {
             /* content:"⊕"; */
             content:url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSByPSIxOCIgY3g9IjIwIiBjeT0iMjAiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlPSIjZjdmOWY5IiBmaWxsLW9wYWNpdHk9IjAiLz4KICA8bGluZSB4MT0iMjAiIHkxPSIyIiB4Mj0iMjAiIHkyPSIzOCIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2U9IiNmN2Y5ZjkiIC8+CiAgPGxpbmUgeDE9IjIiIHkxPSIyMCIgeDI9IjM4IiB5Mj0iMjAiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlPSIjZjdmOWY5IiAvPgo8L3N2Zz4K');
-            padding-left:4px;
+            position:fixed;
+            padding-top:6px;
+            padding-left:5px;
+
         }
         .Q:before {
             content:"❘0⟩";
@@ -257,7 +282,7 @@
                         {type:"Q",q:1, t:0},
                         // Create 1/sqrt(2)(|00> + |11>)
                         {type:"H",   q:0, t:1},
-                        {type:"CNOT",q:0, t:2, target:1},
+                        {type:"CNOT",q:1, t:2, controls:[0]},
                         // Measure
                         {type:"M",q:0, t:3},
                         {type:"M",q:1, t:3}
@@ -292,7 +317,7 @@
                         {type:"X",q:1, t:1},
                         {type:"H",q:1, t:2},
                         // Oracle e.g. Identity, balanced function
-                        {type:"CNOT",q:0, t:3, target:1},
+                        {type:"CNOT",q:1, t:3, controls:[0]},
                         // Measure
                         {type:"M",q:0, t:4},
                         {type:"M",q:1, t:4}
@@ -379,7 +404,6 @@
             if (gateRefs['gate-' + t + '-' + q]){
                 return false;
             }
-            // also check CNOT target bit
             if (q < 0 || q >= state.qubits){
                 return false;
             }
@@ -546,9 +570,13 @@
                     // do nothing
                 }
                 else if (gtype === 'CNOT'){
-                    let target = data?.gates[i]?.target;
-                    func = `CNOT(qubits[${qpos}],qubits[${target}]);`;
+                    let controls = data?.gates[i]?.controls;
+                    func = `CNOT(qubits[${controls[0]}],qubits[${qpos}]);`;
                 }
+                //else if (gtype === 'TOFFOLI'){
+                //    let controls = data?.gates[i]?.controls;
+                //    func = `TOFFOLI(qubits[${controls[0]}],qubits[${controls[1]}],qubits[${qpos}]);`;
+                //}
                 else {
                     func = `${gtype}(qubits[${qpos}]);`;
 

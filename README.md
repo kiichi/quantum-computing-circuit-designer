@@ -60,3 +60,13 @@ namespace MyCircuit {
     }
 }
 ```
+
+
+## TODO - SELF MEMO
+
+Integrate them? 
+- [quantastica/quantum-circuit: Quantum Circuit Simulator implemented in JavaScript](https://github.com/quantastica/quantum-circuit)
+- [Quantum Programming Studio](https://quantum-circuit.com/qconvert)
+
+
+Plan - the above json is simple t vs qubits simply for drawing purpose -> first export it to QASM 2.0 then convert it to any languages ?
