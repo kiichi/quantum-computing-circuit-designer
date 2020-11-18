@@ -290,6 +290,46 @@
                 }
             },
             {
+                name:"Quantum Teleportation",
+                category: "Quantum Internet",
+                state:{ 
+                    labels:[
+                        {
+                            text: 'Bob\'s Entanglement with the bridge',
+                            t:[1,2]
+                        },
+                        {
+                            text: 'Alice is relating her bit with CNOT on bridge',
+                            t:[3,4]
+                        },
+                        {
+                            text: 'Measurement',
+                            t:[5,6]
+                        }
+                    ],
+                    qubits:3,
+                    gates:[
+                        // Alice's qubit. She wants to clone this state in Bob's qubit
+                        // We just initialize this with |0> for now, but this could be rotated
+                        // and turn it to arbitral state |ψ>
+                        {type:"Q",q:0, t:0}, 
+                        {type:"Q",q:1, t:0},
+                        {type:"Q",q:2, t:0},
+                        // Bob - Entangle his bit with bridge
+                        {type:"H",q:1, t:2},
+                        {type:"CNOT",q:2, t:3, controls:[1]},
+                        // Alice - Relate her qubit with CNOT
+                        {type:"CNOT",q:1, t:4, controls:[0]},
+                        // Then apply H on her qubit 
+                        {type:"H",q:0, t:5},
+                        // Measure
+                        {type:"M",q:0, t:7},
+                        {type:"M",q:1, t:7},
+                        {type:"M",q:2, t:7}
+                    ]
+                }
+            },
+            {
                 name:"Deutch's Algorithm",
                 category: "Algorithm",
                 state:{ 
@@ -646,7 +686,7 @@ ${usingCode}
         } 
 
         function createExampleMenuItems(sampleData){
-            const categories = ["Basic","Algorithm"];
+            const categories = ["Basic","Quantum Internet", "Algorithm"];
             return categories.map((cat)=>{
                 let retHtml = `<li class="divider" data-content="${cat}"></li>`
                     + sampleData
