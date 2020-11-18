@@ -190,7 +190,7 @@
         </section>
         <section class="navbar-section">
             <div class="input-group input-inline">
-                <button class="btn" onClick="showExport()">Q# <i class="icon icon-resize-horiz"></i></button>
+                <button class="btn" onClick="showExport()">Code <i class="icon icon-resize-horiz"></i></button>
                 <button class="btn" onClick="showExamples()">Examples <i class="icon icon-apps"></i></button>
                 <button id="export-button" class="btn" onClick="addQubit()">Qubit <i class="icon icon-plus"></i></button>
             </div>
@@ -204,7 +204,18 @@
         <div class="modal-container modal-wide">
           <div class="modal-header pt-3 pl-0 pr-0">
             <a href="#close" class="btn btn-clear float-right" onClick="hideDialog('modal-export')"></a>
-            <div class="modal-title h5">Exported Q# Code</div>
+            <div class="modal-title h5 columns">
+                <div class="column col-1">
+                    Export
+                </div>
+                <div class="column col-3">
+                    <select id="export" class="form-select select-sm" onChange="bindCode()">
+                        <option value="qasm">QASM</option>
+                        <option value="qsharp">Q#</option>
+                        <option value="json">Raw JSON Data</option>
+                    </select>
+                </div>
+            </div>
           </div>
           <div class="modal-body pt-0 pl-0 pr-0">
             <div class="content">
@@ -322,10 +333,9 @@
                         {type:"CNOT",q:1, t:4, controls:[0]},
                         // Then apply H on her qubit 
                         {type:"H",q:0, t:5},
-                        // Measure
+                        // Measure - 3rd bit no need to measure, discard
                         {type:"M",q:0, t:7},
-                        {type:"M",q:1, t:7},
-                        {type:"M",q:2, t:7}
+                        {type:"M",q:1, t:7}
                     ]
                 }
             },
@@ -592,6 +602,55 @@
             return (y - offsetTop) / gridSize;
         }
 
+        // https://quantum-circuit.com/qconvert
+        function exportQASM(data){
+            let glines = [];
+            for (let i=0; i<data?.gates?.length; i++){
+                let gtype = data?.gates[i]?.type;
+                let tpos = data?.gates[i]?.t;
+                let qpos = data?.gates[i]?.q;
+                if (!glines[tpos]) {
+                    glines[tpos] = [];
+                    // this will be inserted first
+                    glines[tpos][0] = `// t=${tpos}`;
+                }
+                let func = '';
+                if (gtype === 'Q'){
+                    // do nothing
+                }
+                else if (gtype === 'CNOT'){
+                    let controls = data?.gates[i]?.controls;
+                    func = `cx q[${controls[0]}], q[${qpos}];`;
+                }
+                else if (gtype === 'M'){
+                    func = `measure q[${qpos}] -> c[${qpos}];`;
+                }
+                else {
+                    func = `${gtype.toLowerCase()} q[${qpos}];`;
+                }
+                if (func){
+                    glines[tpos][1+qpos] = func; // +1 reserved 1st one for comment
+                }
+            }
+
+
+            let gatesCode = glines.filter((line)=>line.length > 1).map((line)=>{
+                //console.log(line);
+                return line.filter((seg)=>seg).map((seg)=>{
+                    return seg;
+                }).join('\n');
+            }).join('\n\n');
+
+
+            let codeStr = `
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[${data?.qubits}];
+creg c[${data?.qubits}];
+${gatesCode}
+`;
+            return codeStr;
+        }
         function exportQSharp(data){
             // sort labels by t = pos
             // sort gates by t
@@ -662,7 +721,25 @@ ${usingCode}
     
         function showExport(){
             document.getElementById("modal-export").classList.add('active');
-            let code = exportQSharp(state);
+            bindCode();
+        }
+
+        function bindCode(){
+            let type = document.querySelector('#export').value;
+            generateCode(type, state);
+        }
+
+        function generateCode(type, data){
+            let code = '';
+            if (type === 'qasm'){
+                code = exportQASM(data);
+            }
+            else if (type === 'qsharp'){
+                code = exportQSharp(data);
+            }
+            else if (type === 'json') {
+                code = JSON.stringify(data,4,4);
+            }
             document.getElementById('code').innerHTML = code;
         }
         
